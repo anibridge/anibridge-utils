@@ -1,7 +1,7 @@
 [project]
 name = "anibridge-utils"
 version = "0.1.0"
-description = "Internal shared utilities for the AniBridge project"
+description = "Internal shared utilities for the AniBridge project."
 readme = "README.md"
 requires-python = ">=3.14"
 
@@ -19,10 +19,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-dependencies = [
-    "cachetools>=7.0.1",
-    "diskcache>=5.6.3",
-]
+dependencies = ["cachetools>=7.0.1", "diskcache>=5.6.3"]
 
 [tool.ruff]
 indent-width = 4

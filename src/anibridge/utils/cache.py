@@ -11,7 +11,7 @@ import weakref
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, ParamSpec, Protocol, TypeVar, cast, overload
+from typing import Any, Concatenate, ParamSpec, Protocol, TypeVar, cast, overload
 
 from cachetools import LRUCache as CachetoolsLRUCache
 from cachetools import TTLCache as CachetoolsTTLCache
@@ -83,17 +83,17 @@ class CachedFunction(Protocol[P, T]):
 
     @overload
     def __get__(
-        self,
-        instance: None,
+        self: CachedFunction[Concatenate[object, P], T],
+        instance: object,
         owner: type[Any] | None = None,
-    ) -> CachedFunction[P, T]: ...
+    ) -> BoundCachedFunction[T]: ...
 
     @overload
     def __get__(
         self,
-        instance: object,
+        instance: None,
         owner: type[Any] | None = None,
-    ) -> BoundCachedFunction[T]: ...
+    ) -> CachedFunction[P, T]: ...
 
 
 class CachedAsyncFunction(Protocol[P, T]):
@@ -113,17 +113,17 @@ class CachedAsyncFunction(Protocol[P, T]):
 
     @overload
     def __get__(
-        self,
-        instance: None,
+        self: CachedAsyncFunction[Concatenate[object, P], T],
+        instance: object,
         owner: type[Any] | None = None,
-    ) -> CachedAsyncFunction[P, T]: ...
+    ) -> BoundCachedAsyncFunction[T]: ...
 
     @overload
     def __get__(
         self,
-        instance: object,
+        instance: None,
         owner: type[Any] | None = None,
-    ) -> BoundCachedAsyncFunction[T]: ...
+    ) -> CachedAsyncFunction[P, T]: ...
 
 
 class BoundCachedFunction(Protocol[T]):

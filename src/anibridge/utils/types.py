@@ -1,12 +1,27 @@
 """Shared types for AniBridge."""
 
-from logging import Logger
 from typing import Any, Protocol
 
-__all__ = ["MappingDescriptor", "ProviderLogger"]
+__all__ = ["Comparable", "MappingDescriptor", "ProviderLogger"]
 
 type MappingDescriptor = tuple[str, str, str | None]
-type ProviderLogger = Logger  # TODO: `success()` typing
+
+
+class ProviderLogger(Protocol):
+    """Protocol for loggers injected into provider and app clients."""
+
+    def debug(self, msg: object, *args: object, **kwargs: object) -> None: ...
+
+    def info(self, msg: object, *args: object, **kwargs: object) -> None: ...
+
+    def success(self, msg: object, *args: object, **kwargs: object) -> None: ...
+
+    def warning(self, msg: object, *args: object, **kwargs: object) -> None: ...
+
+    def error(self, msg: object, *args: object, **kwargs: object) -> None: ...
+
+    def exception(self, msg: object, *args: object, **kwargs: object) -> None: ...
+
 
 
 class Comparable(Protocol):

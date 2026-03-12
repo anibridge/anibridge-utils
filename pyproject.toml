@@ -21,7 +21,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-dependencies = ["cachetools>=7.0.1", "diskcache>=5.6.3"]
+dependencies = ["cachetools>=7.0.1", "diskcache>=5.6.3", "requests>=2.32.0"]
 
 [tool.ruff]
 indent-width = 4

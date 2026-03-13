@@ -19,9 +19,9 @@ def fetch_image_as_data_url(
 
     Args:
         url (str): The URL of the image to fetch.
-        headers (Mapping[str, str] | None): Optional HTTP headers to include in the request.
+        headers (Mapping[str, str] | None): HTTP headers to include in the request.
         timeout (float): Timeout for the HTTP request in seconds.
-        default_mime (str): Default MIME type to use if the response does not specify one.
+        default_mime (str): Default MIME type to use if response does not specify one.
 
     Returns:
         str: A data URL containing the base64-encoded image.

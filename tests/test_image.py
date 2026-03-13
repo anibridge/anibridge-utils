@@ -1,6 +1,7 @@
 """Tests for shared image helpers."""
 
 import base64
+from typing import ClassVar
 
 import pytest
 
@@ -12,7 +13,7 @@ def test_fetch_image_as_data_url(monkeypatch: pytest.MonkeyPatch) -> None:
     payload = b"abc123"
 
     class DummyResponse:
-        headers = {"Content-Type": "image/png"}
+        headers: ClassVar[dict[str, str]] = {"Content-Type": "image/png"}
         content = payload
 
         @staticmethod

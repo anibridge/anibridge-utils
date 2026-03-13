@@ -33,6 +33,10 @@ class ProviderLogger(Protocol):
     def exception(self, msg: object, *args: object, **kwargs: object) -> None:
         """Exception log."""
         ...
+    
+    def getChild(self, name: str) -> ProviderLogger:
+        """Get a child logger with the given name."""
+        ...
 
 
 class Comparable(Protocol):

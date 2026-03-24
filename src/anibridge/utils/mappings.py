@@ -4,7 +4,6 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from fractions import Fraction
-from functools import lru_cache
 
 from anibridge.utils.types import MappingDescriptor
 
@@ -24,8 +23,8 @@ __all__ = [
     "format_mapping_range",
     "is_valid_source_range",
     "is_valid_target_range",
-    "ratio_to_weight",
     "parse_mapping_descriptor",
+    "ratio_to_weight",
 ]
 
 
@@ -54,7 +53,9 @@ class AnibridgeMapping:
         if any(length is None for length in target_lengths):
             return
 
-        total_target_length = sum(length for length in target_lengths if length is not None)
+        total_target_length = sum(
+            length for length in target_lengths if length is not None
+        )
 
         if ratio > 0:
             expected_target_length = Fraction(source_length, ratio)
@@ -121,9 +122,7 @@ class AnibridgeMapping:
         Returns:
             str: Serialized target ranges and optional trailing ratio.
         """
-        base = ",".join(
-            format_mapping_range(segment) for segment in self.target_ranges
-        )
+        base = ",".join(format_mapping_range(segment) for segment in self.target_ranges)
         if self.target_ratio is None:
             return base
         return f"{base}|{self.target_ratio}"
@@ -295,6 +294,7 @@ class AnibridgeDescriptorMapping:
         """
         return {mapping.source_key: mapping.target_value for mapping in self.mappings}
 
+
 def descriptor_key(descriptor: MappingDescriptor) -> str:
     """Serialize a descriptor tuple into `provider:id[:scope]` format."""
     provider, entry_id, scope = descriptor
@@ -316,6 +316,7 @@ def parse_mapping_descriptor(value: str) -> MappingDescriptor:
         match.group("scope"),
     )
 
+
 def is_valid_source_range(value: str) -> bool:
     """Check if a string is a valid source range.
 
@@ -326,6 +327,7 @@ def is_valid_source_range(value: str) -> bool:
         bool: True if value matches source range schema, False otherwise.
     """
     return bool(SOURCE_RANGE_RE.match(value.strip()))
+
 
 def is_valid_target_range(value: str) -> bool:
     """Check if a string is a valid target range.

@@ -1,6 +1,6 @@
 [project]
 name = "anibridge-utils"
-version = "0.2.0b2"
+version = "0.2.0b3"
 description = "Internal shared utilities for the AniBridge project."
 readme = "README.md"
 requires-python = ">=3.14"

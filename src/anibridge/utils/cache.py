@@ -8,7 +8,7 @@ import hashlib
 import inspect
 import threading
 import weakref
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, MutableMapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Concatenate, ParamSpec, Protocol, TypeVar, cast, overload
@@ -17,10 +17,21 @@ from cachetools import LRUCache as CachetoolsLRUCache
 from cachetools import TTLCache as CachetoolsTTLCache
 from diskcache import Cache as DiskCache
 
-__all__ = ["CacheInfo", "cache", "file_cache", "lru_cache", "ttl_cache"]
+__all__ = [
+    "CacheDict",
+    "CacheInfo",
+    "LRUDict",
+    "TTLDict",
+    "cache",
+    "file_cache",
+    "lru_cache",
+    "ttl_cache",
+]
 
 P = ParamSpec("P")
 T = TypeVar("T")
+K = TypeVar("K")
+V = TypeVar("V")
 
 _UNBOUNDED_MAXSIZE = 2**31 - 1
 _MISSING = object()
@@ -155,6 +166,141 @@ class CacheInfo:
     maxsize: int | None
     currsize: int
     ttl: float | None = None
+
+
+class CacheDict[K, V](MutableMapping[K, V]):
+    """Dictionary-like wrapper over a cache mapping."""
+
+    def __init__(self, backing: Any) -> None:
+        """Initialize with a backing cache-like mapping object."""
+        self._cache = backing
+        self._lock = threading.RLock()
+        self._hits = 0
+        self._misses = 0
+
+    def __getitem__(self, key: K) -> V:
+        """Return the value for `key` and record hit/miss stats."""
+        with self._lock:
+            try:
+                value = self._cache[key]
+            except KeyError:
+                self._misses += 1
+                raise
+            self._hits += 1
+            return cast(V, value)
+
+    def __setitem__(self, key: K, value: V) -> None:
+        """Store `value` under `key`."""
+        with self._lock:
+            self._cache[key] = value
+
+    def __delitem__(self, key: K) -> None:
+        """Remove `key` from the cache."""
+        with self._lock:
+            del self._cache[key]
+
+    def __contains__(self, key: object) -> bool:
+        """Return whether `key` exists in the cache."""
+        with self._lock:
+            return key in self._cache
+
+    def __len__(self) -> int:
+        """Return number of currently cached entries."""
+        with self._lock:
+            return len(self._cache)
+
+    def __iter__(self):
+        """Iterate over a stable snapshot of cache keys."""
+        with self._lock:
+            return iter(tuple(self._cache.keys()))
+
+    @overload
+    def get(self, key: K) -> V | None: ...
+
+    @overload
+    def get(self, key: K, default: T) -> V | T: ...
+
+    def get(self, key: K, default: Any = None) -> V | Any:
+        """Return `key` value if present, otherwise `default`."""
+        with self._lock:
+            value = self._cache.get(key, _MISSING)
+            if value is _MISSING:
+                self._misses += 1
+                return default
+            self._hits += 1
+            return cast(V, value)
+
+    @overload
+    def pop(self, key: K) -> V: ...
+
+    @overload
+    def pop(self, key: K, default: T) -> V | T: ...
+
+    def pop(self, key: K, default: Any = _MISSING) -> V | Any:
+        """Remove and return `key` value, optionally using `default`."""
+        with self._lock:
+            if default is _MISSING:
+                return cast(V, self._cache.pop(key))
+            return cast(V | Any, self._cache.pop(key, default))
+
+    def clear(self) -> None:
+        """Remove all cached entries."""
+        with self._lock:
+            self._cache.clear()
+
+    def keys(self):
+        """Return a snapshot of cache keys."""
+        with self._lock:
+            return tuple(self._cache.keys())
+
+    def values(self):
+        """Return a snapshot of cache values."""
+        with self._lock:
+            return tuple(self._cache.values())
+
+    def items(self):
+        """Return a snapshot of cache items."""
+        with self._lock:
+            return tuple(self._cache.items())
+
+    def cache_info(self) -> CacheInfo:
+        """Return hit/miss stats and cache sizing information."""
+        with self._lock:
+            return CacheInfo(
+                hits=self._hits,
+                misses=self._misses,
+                maxsize=getattr(self._cache, "maxsize", None),
+                currsize=len(self._cache),
+            )
+
+
+class TTLDict[K, V](CacheDict[K, V]):
+    """TTL-based dictionary using `cachetools.TTLCache`."""
+
+    def __init__(self, ttl: float = 300, maxsize: int | None = None) -> None:
+        """Initialize a TTL dictionary."""
+        resolved_maxsize = _UNBOUNDED_MAXSIZE if maxsize is None else maxsize
+        self.ttl = ttl
+        super().__init__(CachetoolsTTLCache(maxsize=resolved_maxsize, ttl=ttl))
+
+    def cache_info(self) -> CacheInfo:
+        """Return cache stats including configured TTL value."""
+        info = super().cache_info()
+        return CacheInfo(
+            hits=info.hits,
+            misses=info.misses,
+            maxsize=info.maxsize,
+            currsize=info.currsize,
+            ttl=self.ttl,
+        )
+
+
+class LRUDict[K, V](CacheDict[K, V]):
+    """LRU-based dictionary using `cachetools.LRUCache`."""
+
+    def __init__(self, maxsize: int = 128) -> None:
+        """Initialize an LRU dictionary."""
+        super().__init__(CachetoolsLRUCache(maxsize=maxsize))
 
 
 def _generic_hash(obj: Any, _visited_ids: set[int] | None = None) -> int:

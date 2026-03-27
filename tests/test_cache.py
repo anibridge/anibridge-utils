@@ -1,12 +1,20 @@
 """Tests for caching utilities."""
 
 import asyncio
+import time
 from collections.abc import Callable
 from typing import cast
 
 import pytest
 
-from anibridge.utils.cache import _generic_hash, file_cache, lru_cache, ttl_cache
+from anibridge.utils.cache import (
+    LRUDict,
+    TTLDict,
+    _generic_hash,
+    file_cache,
+    lru_cache,
+    ttl_cache,
+)
 
 
 def test_generic_hash_order_insensitive_for_dicts():
@@ -162,3 +170,42 @@ async def test_ttl_cache_async_single_flight() -> None:
     )
     assert results == [10, 10, 10]
     assert calls["count"] == 1
+
+
+def test_ttl_dict_expires_items() -> None:
+    """TTLDict should expire entries after TTL."""
+    cache = TTLDict[str, int](ttl=0.05)
+    cache["answer"] = 42
+
+    assert cache["answer"] == 42
+    time.sleep(0.08)
+
+    with pytest.raises(KeyError):
+        _ = cache["answer"]
+
+
+def test_lru_dict_evicts_oldest_item() -> None:
+    """LRUDict should evict least-recently-used entries when full."""
+    cache = LRUDict[str, int](maxsize=2)
+    cache["a"] = 1
+    cache["b"] = 2
+    _ = cache["a"]
+    cache["c"] = 3
+
+    assert "a" in cache
+    assert "c" in cache
+    assert "b" not in cache
+
+
+def test_cache_dict_cache_info_tracks_hits_and_misses() -> None:
+    """Cache-backed dicts should report hit/miss statistics."""
+    cache = TTLDict[str, int](ttl=10)
+    cache["x"] = 7
+
+    assert cache.get("x") == 7
+    assert cache.get("missing") is None
+
+    info = cache.cache_info()
+    assert info.hits == 1
+    assert info.misses == 1
+    assert info.ttl == 10

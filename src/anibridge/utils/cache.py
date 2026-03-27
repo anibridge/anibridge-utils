@@ -303,38 +303,53 @@ class LRUDict[K, V](CacheDict[K, V]):
         super().__init__(CachetoolsLRUCache(maxsize=maxsize))
 
 
-def _generic_hash(obj: Any, _visited_ids: set[int] | None = None) -> int:
-    """Generate a hash for arbitrary objects, handling unhashable types."""
+def _freeze_for_key(obj: Any, _visited_ids: set[int] | None = None) -> Any:
     if _visited_ids is None:
         _visited_ids = set()
 
     obj_id = id(obj)
     if obj_id in _visited_ids:
-        return hash("<cycle>")
+        raise TypeError
 
-    _visited_ids.add(obj_id)
     try:
-        h = hash(obj)
+        hash(obj)
+        return obj
     except TypeError:
-        if isinstance(obj, list | tuple):
-            h = hash(tuple(_generic_hash(item, _visited_ids) for item in obj))
-        elif isinstance(obj, set):
-            h = hash(frozenset(_generic_hash(item, _visited_ids) for item in obj))
-        elif isinstance(obj, dict):
-            h = hash(
-                tuple(
-                    sorted(
-                        (_generic_hash(k, _visited_ids), _generic_hash(v, _visited_ids))
-                        for k, v in obj.items()
-                    )
+        _visited_ids.add(obj_id)
+        try:
+            if isinstance(obj, tuple):
+                return tuple(_freeze_for_key(item, _visited_ids) for item in obj)
+            if isinstance(obj, list):
+                return (
+                    "__list__",
+                    tuple(_freeze_for_key(item, _visited_ids) for item in obj),
                 )
-            )
-        else:
-            h = hash(obj_id)
-    finally:
-        # Use finally to ensure cleanup even if exception occurs
-        _visited_ids.discard(obj_id)
-    return h
+            if isinstance(obj, set):
+                return (
+                    "__set__",
+                    frozenset(_freeze_for_key(item, _visited_ids) for item in obj),
+                )
+            if isinstance(obj, dict):
+                return (
+                    "__dict__",
+                    tuple(
+                        sorted(
+                            (
+                                _freeze_for_key(k, _visited_ids),
+                                _freeze_for_key(v, _visited_ids),
+                            )
+                            for k, v in obj.items()
+                        )
+                    ),
+                )
+            raise
+        finally:
+            _visited_ids.discard(obj_id)
+
+
+def _generic_hash(obj: Any, _visited_ids: set[int] | None = None) -> int:
+    """Generate a hash for arbitrary objects, handling unhashable types."""
+    return hash(_freeze_for_key(obj, _visited_ids))
 
 
 def _make_key(
@@ -350,7 +365,9 @@ def _make_key(
             return None
 
     try:
-        return _generic_hash((args, kwargs))
+        key = _freeze_for_key((args, kwargs))
+        hash(key)
+        return key
     except Exception:
         return None
 

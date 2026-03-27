@@ -9,6 +9,7 @@ Shared utilities used across the [AniBridge](https://github.com/anibridge/anibri
 - `anibridge.utils.datetime`: Timezone and datetime normalization helpers.
 - `anibridge.utils.image`: Helpers for provider image fetching and data URL encoding.
 - `anibridge.utils.limiter`: Async rate-limiting utilities.
+- `anibridge.utils.mappings`: Parsers and helpers for the AniBridge mappings schema.
 - `anibridge.utils.registry`: Generic `ProviderRegistry` used to register provider classes by namespace.
 - `anibridge.utils.tasks`: Safe background task scheduling helpers.
 - `anibridge.utils.types`: Shared type aliases such as `MappingDescriptor` and `ProviderLogger`.

@@ -389,6 +389,7 @@ class _InFlightCoalescer(dict[Any, asyncio.Future]):
         if pending is not None:
             return False, pending
         future: asyncio.Future = asyncio.get_running_loop().create_future()
+        future.add_done_callback(_consume_future_exception)
         self[cache_key] = future
         return True, future
 
@@ -403,6 +404,17 @@ class _InFlightCoalescer(dict[Any, asyncio.Future]):
         active = self.pop(cache_key, None)
         if active is not None and not active.done():
             active.set_exception(exc)
+
+
+def _consume_future_exception(future: asyncio.Future) -> None:
+    """Mark internal coordination future exceptions as observed.
+
+    The caller task does not await that future itself, so without consuming the stored
+    exception here the event loop can later emit "Future exception was never retrieved"
+    warnings even though the original caller already handled the raised exception.
+    """
+    with contextlib.suppress(asyncio.CancelledError, Exception):
+        future.exception()
 
 
 class _CacheDescriptor:

@@ -784,9 +784,6 @@ def ttl_cache(
                 return None
         return _make_key(args, kwargs, strict=False)
 
-    def _make_info(hits: int, misses: int) -> CacheInfo:
-        return CacheInfo(hits=hits, misses=misses, maxsize=None, currsize=0, ttl=ttl)
-
     is_async_func: bool | None = None  # resolved on first decoration
 
     def _build_wrapper(func: Callable) -> Any:

@@ -547,8 +547,8 @@ def _make_sync_wrapper(
         with lock:
             return make_info(hits, misses)
 
-    wrapper.cache_clear = cache_clear  # type: ignore[attr-defined]
-    wrapper.cache_info = cache_info  # type: ignore[attr-defined]
+    wrapper.cache_clear = cache_clear  # ty:ignore[unresolved-attribute]
+    wrapper.cache_info = cache_info  # ty:ignore[unresolved-attribute]
     return wrapper
 
 
@@ -613,8 +613,8 @@ def _make_async_wrapper(
         with lock:
             return make_info(hits, misses)
 
-    wrapper.cache_clear = cache_clear  # type: ignore[attr-defined]
-    wrapper.cache_info = cache_info  # type: ignore[attr-defined]
+    wrapper.cache_clear = cache_clear  # ty:ignore[unresolved-attribute]
+    wrapper.cache_info = cache_info  # ty:ignore[unresolved-attribute]
     return wrapper
 
 
@@ -999,8 +999,8 @@ def file_cache(
                     _DISK_CACHES.discard(disk_cache)
                 _close_disk_cache(disk_cache)
 
-            async_wrapper.cache_clear = cache_clear  # type: ignore[attr-defined]
-            async_wrapper.cache_info = cache_info  # type: ignore[attr-defined]
+            async_wrapper.cache_clear = cache_clear  # ty:ignore[unresolved-attribute]
+            async_wrapper.cache_info = cache_info  # ty:ignore[unresolved-attribute]
             weakref.finalize(async_wrapper, close_cache)
             return async_wrapper
 
@@ -1048,8 +1048,8 @@ def file_cache(
                 _DISK_CACHES.discard(disk_cache)
             _close_disk_cache(disk_cache)
 
-        sync_wrapper.cache_clear = cache_clear  # type: ignore[attr-defined]
-        sync_wrapper.cache_info = cache_info  # type: ignore[attr-defined]
+        sync_wrapper.cache_clear = cache_clear  # ty:ignore[unresolved-attribute]
+        sync_wrapper.cache_info = cache_info  # ty:ignore[unresolved-attribute]
         weakref.finalize(sync_wrapper, close_cache)
         return sync_wrapper
 

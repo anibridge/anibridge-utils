@@ -16,54 +16,54 @@ def test_limiter_rejects_invalid_configuration() -> None:
         Limiter(rate=1, capacity=0)
 
 
-def test_sync_decorator_calls_consume_once(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Synchronous wrapper should consume one token per invocation."""
+def test_sync_decorator_calls_acquire_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Synchronous wrapper should acquire one token per invocation."""
     limiter = Limiter(rate=10, capacity=1)
-    state = {"consumed": 0}
+    state = {"acquired": 0}
 
-    def fake_consume() -> None:
-        state["consumed"] += 1
+    def fake_acquire() -> None:
+        state["acquired"] += 1
 
-    monkeypatch.setattr(limiter, "_consume_sync", fake_consume)
+    monkeypatch.setattr(limiter, "_acquire_sync", fake_acquire)
 
     @limiter
     def add_one(value: int) -> int:
         return value + 1
 
     assert add_one(4) == 5
-    assert state["consumed"] == 1
+    assert state["acquired"] == 1
 
 
-def test_sync_decorator_factory_form(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Limiter should support @limiter() decorator factory usage."""
+def test_acquire_sync_path_outside_event_loop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """acquire() should block synchronously when no event loop is running."""
     limiter = Limiter(rate=10, capacity=1)
-    state = {"consumed": 0}
+    state = {"acquired": 0}
 
-    def fake_consume() -> None:
-        state["consumed"] += 1
+    def fake_acquire() -> None:
+        state["acquired"] += 1
 
-    monkeypatch.setattr(limiter, "_consume_sync", fake_consume)
+    monkeypatch.setattr(limiter, "_acquire_sync", fake_acquire)
 
-    @limiter()
-    def double(value: int) -> int:
-        return value * 2
+    result = limiter.acquire()
 
-    assert double(3) == 6
-    assert state["consumed"] == 1
+    assert result is None
+    assert state["acquired"] == 1
 
 
 @pytest.mark.asyncio
-async def test_async_decorator_calls_consume_once(
+async def test_async_decorator_calls_acquire_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Asynchronous wrapper should consume one token per invocation."""
+    """Asynchronous wrapper should acquire one token per invocation."""
     limiter = Limiter(rate=10, capacity=1)
-    state = {"consumed": 0}
+    state = {"acquired": 0}
 
-    async def fake_consume() -> None:
-        state["consumed"] += 1
+    async def fake_acquire() -> None:
+        state["acquired"] += 1
 
-    monkeypatch.setattr(limiter, "_consume_async", fake_consume)
+    monkeypatch.setattr(limiter, "_acquire_async", fake_acquire)
 
     @limiter
     async def add_one(value: int) -> int:
@@ -71,7 +71,26 @@ async def test_async_decorator_calls_consume_once(
         return value + 1
 
     assert await add_one(4) == 5
-    assert state["consumed"] == 1
+    assert state["acquired"] == 1
+
+
+@pytest.mark.asyncio
+async def test_acquire_async_path_inside_event_loop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """acquire() should return an awaitable when called in an event loop."""
+    limiter = Limiter(rate=10, capacity=1)
+    state = {"acquired": 0}
+
+    async def fake_acquire() -> None:
+        state["acquired"] += 1
+
+    monkeypatch.setattr(limiter, "_acquire_async", fake_acquire)
+
+    awaitable = limiter.acquire()
+    assert awaitable is not None
+    await awaitable
+    assert state["acquired"] == 1
 
 
 @pytest.mark.asyncio
@@ -94,7 +113,7 @@ async def test_disabled_short_circuits_sync_and_async(
     previous = Limiter.DISABLED
     Limiter.DISABLED = True
     try:
-        limiter._consume_sync()
-        await limiter._consume_async()
+        limiter._acquire_sync()
+        await limiter._acquire_async()
     finally:
         Limiter.DISABLED = previous

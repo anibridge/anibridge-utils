@@ -45,8 +45,8 @@ class Limiter:
         self._tokens = min(self.capacity, self._tokens + elapsed * self.rate)
         self._last_check = now
 
-    def _consume_sync(self) -> None:
-        """Consume a token in a blocking manner."""
+    def _acquire_sync(self) -> None:
+        """Block until one token is available and consume it."""
         if Limiter.DISABLED:
             return
         while True:
@@ -59,8 +59,8 @@ class Limiter:
                 wait_time = (1 - self._tokens) / self.rate
             time.sleep(wait_time)
 
-    async def _consume_async(self) -> None:
-        """Consume a token in an async manner."""
+    async def _acquire_async(self) -> None:
+        """Wait asynchronously until one token is available and consume it."""
         if Limiter.DISABLED:
             return
         while True:
@@ -72,6 +72,19 @@ class Limiter:
                     return
                 wait_time = (1 - self._tokens) / self.rate
             await asyncio.sleep(wait_time)
+
+    def acquire(self) -> None | Awaitable[None]:
+        """Acquire one token, blocking or async depending on the running context.
+
+        Returns an awaitable when called from within a running event loop,
+        otherwise blocks synchronously.
+        """
+        try:
+            asyncio.get_running_loop()
+            return self._acquire_async()
+        except RuntimeError:
+            self._acquire_sync()
+            return None
 
     @overload
     def __call__(self) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
@@ -85,28 +98,21 @@ class Limiter:
     ) -> Callable[P, Awaitable[R]]: ...
 
     def __call__(self, func: Callable[P, R] | Callable[P, Awaitable[R]] | None = None):
-        """Return a decorator that rate-limits sync or async callables."""
-
-        def decorator(
-            target: Callable[P, R] | Callable[P, Awaitable[R]],
-        ) -> Callable[P, R] | Callable[P, Awaitable[R]]:
-            """Decorator that rate-limits the target callable."""
-            if inspect.iscoroutinefunction(target):
-
-                @functools.wraps(target)
-                async def async_wrapper(*args: P.args, **kwargs: P.kwargs):
-                    await self._consume_async()
-                    return await target(*args, **kwargs)
-
-                return async_wrapper
-
-            @functools.wraps(target)
-            def sync_wrapper(*args: P.args, **kwargs: P.kwargs):
-                self._consume_sync()
-                return target(*args, **kwargs)
-
-            return sync_wrapper
-
+        """Return a rate-limited wrapper for sync or async callables."""
         if func is None:
-            return decorator
-        return decorator(func)
+            return self
+        if inspect.iscoroutinefunction(func):
+
+            @functools.wraps(func)
+            async def async_wrapper(*args: P.args, **kwargs: P.kwargs):
+                await self._acquire_async()
+                return await func(*args, **kwargs)
+
+            return async_wrapper
+
+        @functools.wraps(func)
+        def sync_wrapper(*args: P.args, **kwargs: P.kwargs):
+            self._acquire_sync()
+            return func(*args, **kwargs)
+
+        return sync_wrapper

@@ -6,7 +6,7 @@ import inspect
 import threading
 import time
 from collections.abc import Awaitable, Callable
-from typing import ClassVar, ParamSpec, TypeVar, overload
+from typing import ClassVar, Literal, ParamSpec, TypeVar, overload
 
 __all__ = ["Limiter"]
 
@@ -73,12 +73,30 @@ class Limiter:
                 wait_time = (1 - self._tokens) / self.rate
             await asyncio.sleep(wait_time)
 
-    def acquire(self) -> None | Awaitable[None]:
-        """Acquire one token, blocking or async depending on the running context.
+    @overload
+    def acquire(self, *, asynchronous: Literal[True]) -> Awaitable[None]: ...
 
-        Returns an awaitable when called from within a running event loop,
-        otherwise blocks synchronously.
+    @overload
+    def acquire(self, *, asynchronous: Literal[False]) -> None: ...
+
+    @overload
+    def acquire(self, *, asynchronous: None = None) -> None | Awaitable[None]: ...
+
+    def acquire(self, *, asynchronous: bool | None = None) -> None | Awaitable[None]:
+        """Acquire one token in sync/async mode.
+
+        Args:
+            asynchronous (bool | None):
+                - True: return an awaitable and acquire asynchronously.
+                - False: block synchronously.
+                - None: auto-detect based on running event loop.
         """
+        if asynchronous is True:
+            return self._acquire_async()
+        if asynchronous is False:
+            self._acquire_sync()
+            return None
+
         try:
             asyncio.get_running_loop()
             return self._acquire_async()

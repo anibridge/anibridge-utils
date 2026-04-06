@@ -729,6 +729,7 @@ def lru_cache(
 def ttl_cache(
     ttl: float = 300,
     *,
+    maxsize: int | None = None,
     key: Callable[..., Any] | None = None,
     per_instance: bool = True,
 ) -> Callable[[Callable[P, T]], CachedFunction[P, T]]: ...
@@ -738,6 +739,7 @@ def ttl_cache(
 def ttl_cache(
     ttl: float = 300,
     *,
+    maxsize: int | None = None,
     key: Callable[..., Any] | None = None,
     per_instance: bool = True,
 ) -> Callable[[Callable[P, Awaitable[T]]], CachedAsyncFunction[P, T]]: ...
@@ -746,6 +748,7 @@ def ttl_cache(
 def ttl_cache(
     ttl: float = 300,
     *,
+    maxsize: int | None = None,
     key: Callable[..., Any] | None = None,
     per_instance: bool = True,
 ) -> Callable[
@@ -756,6 +759,8 @@ def ttl_cache(
 
     Args:
         ttl (float): Time in seconds before cache expires (default: 300).
+        maxsize (int | None): Maximum number of cached items.  When `None`
+            (the default) the cache is unbounded.
         key (Callable | None): Optional function to generate cache key from args/kwargs.
             Should accept the same arguments as the decorated function and return a
             hashable key.
@@ -788,14 +793,15 @@ def ttl_cache(
 
     def _build_wrapper(func: Callable) -> Any:
         """Build a fresh wrapper with its own cache around *func*."""
-        cache = CachetoolsTTLCache(maxsize=_UNBOUNDED_MAXSIZE, ttl=ttl)
+        resolved_maxsize = _UNBOUNDED_MAXSIZE if maxsize is None else maxsize
+        cache = CachetoolsTTLCache(maxsize=resolved_maxsize, ttl=ttl)
         lock = threading.RLock()
 
         def make_info(hits: int, misses: int) -> CacheInfo:
             return CacheInfo(
                 hits=hits,
                 misses=misses,
-                maxsize=None,
+                maxsize=maxsize,
                 currsize=len(cache),
                 ttl=ttl,
             )

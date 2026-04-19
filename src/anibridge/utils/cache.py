@@ -586,7 +586,7 @@ def _make_async_wrapper(
 
         try:
             result = await func(*args, **kwargs)
-        except Exception as exc:
+        except BaseException as exc:
             with lock:
                 in_flight.reject(cache_key, exc)
             raise

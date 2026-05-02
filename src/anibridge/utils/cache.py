@@ -32,6 +32,8 @@ P = ParamSpec("P")
 T = TypeVar("T")
 K = TypeVar("K")
 V = TypeVar("V")
+OwnerT = TypeVar("OwnerT")
+OwnerT = TypeVar("OwnerT")
 
 _UNBOUNDED_MAXSIZE = 2**31 - 1
 _MISSING = object()
@@ -101,9 +103,16 @@ class CachedFunction(Protocol[P, T]):
 
     @overload
     def __get__(
+        self: CachedFunction[Concatenate[type[OwnerT], P], T],
+        instance: None,
+        owner: type[OwnerT],
+    ) -> BoundCachedFunction[T]: ...
+
+    @overload
+    def __get__(
         self,
         instance: None,
-        owner: type[Any] | None = None,
+        owner: None = None,
     ) -> CachedFunction[P, T]: ...
 
 
@@ -131,9 +140,16 @@ class CachedAsyncFunction(Protocol[P, T]):
 
     @overload
     def __get__(
+        self: CachedAsyncFunction[Concatenate[type[OwnerT], P], T],
+        instance: None,
+        owner: type[OwnerT],
+    ) -> BoundCachedAsyncFunction[T]: ...
+
+    @overload
+    def __get__(
         self,
         instance: None,
-        owner: type[Any] | None = None,
+        owner: None = None,
     ) -> CachedAsyncFunction[P, T]: ...
 
 

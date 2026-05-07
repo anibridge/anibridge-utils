@@ -1,6 +1,6 @@
 [project]
 name = "anibridge-utils"
-version = "0.2.1"
+version = "0.2.2"
 description = "Internal shared utilities for the AniBridge project."
 license = "MIT"
 license-files = ["LICENSE"]

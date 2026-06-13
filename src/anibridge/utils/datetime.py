@@ -20,7 +20,7 @@ def normalize_local_datetime(
     if value is None:
         return None
 
-    resolved_local_tz = local_tz or datetime.now().astimezone().tzinfo or UTC
+    resolved_local_tz = local_tz or UTC
     if value.tzinfo is None:
         return value.replace(tzinfo=resolved_local_tz)
     return value.astimezone(resolved_local_tz)

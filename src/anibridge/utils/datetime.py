@@ -8,15 +8,7 @@ __all__ = ["normalize_local_datetime"]
 def normalize_local_datetime(
     value: datetime | None, *, local_tz: tzinfo | None = None
 ) -> datetime | None:
-    """Return a timezone-aware datetime normalized to local timezone.
-
-    Args:
-        value (datetime | None): Datetime to normalize.
-        local_tz (tzinfo | None): Local timezone override for deterministic tests.
-
-    Returns:
-        datetime | None: Timezone-aware datetime in local timezone, or `None`.
-    """
+    """Return a timezone-aware datetime normalized to the requested timezone."""
     if value is None:
         return None
 

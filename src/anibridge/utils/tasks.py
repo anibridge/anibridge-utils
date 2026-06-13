@@ -31,16 +31,7 @@ def schedule_task(
     name: str,
     on_error: Callable[[str, Exception], None] | None = None,
 ) -> asyncio.Task[Any]:
-    """Schedule a coroutine in the background and track task lifecycle.
-
-    Args:
-        coro (Coroutine[Any, Any, Any]): The coroutine to execute.
-        name (str): A name for the task, used in error reporting.
-        on_error (Callable[[str, Exception], None] | None): Optional exception callback.
-
-    Returns:
-        asyncio.Task[Any]: The scheduled task instance.
-    """
+    """Schedule a coroutine in the background and track task lifecycle."""
     task = asyncio.create_task(_run_task(coro, name=name, on_error=on_error))
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)

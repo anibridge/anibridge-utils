@@ -20,12 +20,7 @@ class Limiter:
     DISABLED: ClassVar[bool] = False  # Switch to disable all limiters during tests
 
     def __init__(self, rate: float, capacity: int) -> None:
-        """Initialize the limiter with a rate and capacity.
-
-        Args:
-            rate (float): Tokens added per second.
-            capacity (int): Maximum number of tokens in the bucket.
-        """
+        """Initialize the limiter with a rate and capacity."""
         if rate <= 0:
             raise ValueError("rate must be > 0")
         if capacity <= 0:
@@ -83,14 +78,7 @@ class Limiter:
     def acquire(self, *, asynchronous: None = None) -> None | Awaitable[None]: ...
 
     def acquire(self, *, asynchronous: bool | None = None) -> None | Awaitable[None]:
-        """Acquire one token in sync/async mode.
-
-        Args:
-            asynchronous (bool | None):
-                - True: return an awaitable and acquire asynchronously.
-                - False: block synchronously.
-                - None: auto-detect based on running event loop.
-        """
+        """Acquire one token in sync/async mode."""
         if asynchronous is True:
             return self._acquire_async()
         if asynchronous is False:

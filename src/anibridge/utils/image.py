@@ -15,20 +15,7 @@ def fetch_image_as_data_url(
     timeout: float = 3,
     default_mime: str = "image/jpeg",
 ) -> str:
-    """Fetch an image over HTTP and return a base64 data URL.
-
-    Args:
-        url (str): The URL of the image to fetch.
-        headers (Mapping[str, str] | None): HTTP headers to include in the request.
-        timeout (float): Timeout for the HTTP request in seconds.
-        default_mime (str): Default MIME type to use if response does not specify one.
-
-    Returns:
-        str: A data URL containing the base64-encoded image.
-
-    Raises:
-        requests.RequestException: If HTTP request fails.
-    """
+    """Fetch an image over HTTP and return a base64 data URL."""
     response = requests.get(url, headers=dict(headers or {}), timeout=timeout)
     response.raise_for_status()
 

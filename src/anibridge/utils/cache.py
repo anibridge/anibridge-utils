@@ -44,11 +44,7 @@ _global_default_cache_dir: Path = Path(".cache")
 
 
 def set_default_cache_dir(path: str | Path | None) -> None:
-    """Set process-wide default cache dir for file_cache when cache_dir=None.
-
-    Args:
-        path (str | Path | None): Directory to use for caching.
-    """
+    """Set process-wide default cache dir for file_cache when cache_dir=None."""
     global _global_default_cache_dir
     _global_default_cache_dir = Path(".cache") if path is None else Path(path)
 
@@ -663,17 +659,6 @@ def lru_cache(
 ]:
     """LRU cache decorator for both sync and async functions.
 
-    Args:
-        maxsize (int): Maximum number of cached items.
-        key (Callable | None): Optional function to generate cache key from args/kwargs.
-            Should accept the same arguments as the decorated function and return a
-            hashable key.
-        per_instance (bool): When True (default), each class instance gets its own
-            independent cache.
-
-    Returns:
-        Decorator: Decorated callable with LRU caching.
-
     Example:
         @lru_cache(maxsize=256)
         async def fetch_data(url):
@@ -773,19 +758,6 @@ def ttl_cache(
 ]:
     """Decorator that caches function results with a time-to-live.
 
-    Args:
-        ttl (float): Time in seconds before cache expires (default: 300).
-        maxsize (int | None): Maximum number of cached items.  When `None`
-            (the default) the cache is unbounded.
-        key (Callable | None): Optional function to generate cache key from args/kwargs.
-            Should accept the same arguments as the decorated function and return a
-            hashable key.
-        per_instance (bool): When True (default), each class instance gets its own
-            independent cache.
-
-    Returns:
-        Decorator: Decorated callable with TTL caching.
-
     Example:
         @ttl_cache(ttl=60)
         def expensive_function(x):
@@ -879,19 +851,6 @@ def file_cache(
     CachedFunction[P, T] | CachedAsyncFunction[P, T],
 ]:
     """Decorator that caches function results to disk using pickle.
-
-    Args:
-        cache_dir (str | Path): Directory to store cache files (default: ".cache").
-        ttl (float | None): Optional time-to-live in seconds (None = no expiration).
-        key (Callable | None): Optional function to generate cache key from args/kwargs.
-            Should accept the same arguments as the decorated function and return a
-            hashable key.
-        per_instance (bool): When True, each class instance gets its own independent
-            cache.  Defaults to False because disk-backed caches are shared resources
-            and each instance would open its own SQLite connection.
-
-    Returns:
-        Decorator: Decorated callable with file caching.
 
     Example:
         @file_cache(cache_dir="./my_cache", ttl=3600)
@@ -1109,12 +1068,6 @@ def cache[**P, T](
     func: Callable[P, T] | Callable[P, Awaitable[T]],
 ) -> CachedFunction[P, T] | CachedAsyncFunction[P, T]:
     """Generic cache decorator that applies an LRU cache with cache size of 1.
-
-    Args:
-        func (Callable): Function to be cached.
-
-    Returns:
-        Decorator: Decorated function with LRU caching.
 
     Example:
         @cache

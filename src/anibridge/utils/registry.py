@@ -22,30 +22,12 @@ class ProviderRegistry[P: object]:
         *args: object,
         **kwargs: object,
     ) -> P:
-        """Instantiate the provider registered under `namespace`.
-
-        Args:
-            namespace (str): The namespace identifier to create.
-            *args (object): Positional arguments forwarded to the provider
-                constructor.
-            **kwargs (object): Keyword arguments forwarded to the provider
-                constructor.
-
-        Returns:
-            P: An instance of the registered provider.
-        """
+        """Instantiate the provider registered under `namespace`."""
         provider_cls = self.get(namespace)
         return provider_cls(*args, **kwargs)
 
     def get(self, namespace: str) -> type[P]:
-        """Return the provider class registered under `namespace`.
-
-        Args:
-            namespace (str): The namespace identifier to look up.
-
-        Returns:
-            type[P]: The registered provider class.
-        """
+        """Return the provider class registered under `namespace`."""
         try:
             return self._providers[namespace]
         except KeyError as exc:
@@ -54,11 +36,7 @@ class ProviderRegistry[P: object]:
             ) from exc
 
     def namespaces(self) -> tuple[str, ...]:
-        """Return a tuple of registered namespace identifiers.
-
-        Returns:
-            tuple[str, ...]: The registered namespace identifiers.
-        """
+        """Return a tuple of registered namespace identifiers."""
         return tuple(self._providers)
 
     def register(
@@ -67,18 +45,7 @@ class ProviderRegistry[P: object]:
         *,
         namespace: str | None = None,
     ) -> type[P]:
-        """Register a provider class, optionally used as a decorator.
-
-        Args:
-            provider_cls (type[P] | None): The provider class to register. If `None`,
-                the method acts as a decorator factory.
-            namespace (str | None): Explicit namespace override. Defaults to the class'
-                `NAMESPACE` attribute.
-
-        Returns:
-            type[P] | Callable[[type[P]], type[P]]: The registered provider class, or
-                a decorator that registers the class.
-        """
+        """Register a provider class, optionally used as a decorator."""
         resolved_namespace = namespace or getattr(provider_cls, "NAMESPACE", None)
         if not isinstance(resolved_namespace, str) or not resolved_namespace:
             raise ValueError(
@@ -97,11 +64,7 @@ class ProviderRegistry[P: object]:
         return provider_cls
 
     def unregister(self, namespace: str) -> None:
-        """Remove a provider registration if it exists.
-
-        Args:
-            namespace (str): The namespace identifier to unregister.
-        """
+        """Remove a provider registration if it exists."""
         self._providers.pop(namespace, None)
 
     def __contains__(self, namespace: object) -> bool:

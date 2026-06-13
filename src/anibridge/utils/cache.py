@@ -227,12 +227,12 @@ class CacheDict[K, V](MutableMapping[K, V]):
             return iter(tuple(self._cache.keys()))
 
     @overload
-    def get(self, key: K) -> V | None: ...
+    def get(self, key: object) -> V | None: ...
 
     @overload
-    def get(self, key: K, default: T) -> V | T: ...
+    def get(self, key: object, default: T) -> V | T: ...
 
-    def get(self, key: K, default: Any = None) -> V | Any:
+    def get(self, key: object, default: Any = None) -> V | Any:
         """Return `key` value if present, otherwise `default`."""
         with self._lock:
             value = self._cache.get(key, _MISSING)

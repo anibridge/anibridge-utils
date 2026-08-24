@@ -75,9 +75,9 @@ class Limiter:
     def acquire(self, *, asynchronous: Literal[False]) -> None: ...
 
     @overload
-    def acquire(self, *, asynchronous: None = None) -> None | Awaitable[None]: ...
+    def acquire(self, *, asynchronous: None = None) -> Awaitable[None] | None: ...
 
-    def acquire(self, *, asynchronous: bool | None = None) -> None | Awaitable[None]:
+    def acquire(self, *, asynchronous: bool | None = None) -> Awaitable[None] | None:
         """Acquire one token in sync/async mode."""
         if asynchronous is True:
             return self._acquire_async()

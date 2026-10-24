@@ -1,5 +1,7 @@
 """Shared types for AniBridge."""
 
+from collections.abc import Mapping
+from types import TracebackType
 from typing import Any, Protocol
 
 __all__ = ["Comparable", "MappingDescriptor", "ProviderLogger"]
@@ -7,35 +9,80 @@ __all__ = ["Comparable", "MappingDescriptor", "ProviderLogger"]
 type MappingDescriptor = tuple[str, str, str | None]
 
 
+type _ExcInfo = (
+    bool
+    | BaseException
+    | tuple[type[BaseException], BaseException, TracebackType | None]
+    | tuple[None, None, None]
+    | None
+)
+
+
 class ProviderLogger(Protocol):
     """Protocol for loggers injected into provider and app clients."""
 
-    def debug(self, msg: object, *args: object, **kwargs: object) -> None:
+    def debug(
+        self,
+        msg: object,
+        *args: object,
+        exc_info: _ExcInfo = None,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Mapping[str, object] | None = None,
+    ) -> None:
         """Debug log."""
         ...
 
-    def info(self, msg: object, *args: object, **kwargs: object) -> None:
+    def info(
+        self,
+        msg: object,
+        *args: object,
+        exc_info: _ExcInfo = None,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Mapping[str, object] | None = None,
+    ) -> None:
         """Info log."""
         ...
 
-    def success(self, msg: object, *args: object, **kwargs: object) -> None:
-        """Success log."""
-        ...
-
-    def warning(self, msg: object, *args: object, **kwargs: object) -> None:
+    def warning(
+        self,
+        msg: object,
+        *args: object,
+        exc_info: _ExcInfo = None,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Mapping[str, object] | None = None,
+    ) -> None:
         """Warning log."""
         ...
 
-    def error(self, msg: object, *args: object, **kwargs: object) -> None:
+    def error(
+        self,
+        msg: object,
+        *args: object,
+        exc_info: _ExcInfo = None,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Mapping[str, object] | None = None,
+    ) -> None:
         """Error log."""
         ...
 
-    def exception(self, msg: object, *args: object, **kwargs: object) -> None:
+    def exception(
+        self,
+        msg: object,
+        *args: object,
+        exc_info: _ExcInfo = True,
+        stack_info: bool = False,
+        stacklevel: int = 1,
+        extra: Mapping[str, object] | None = None,
+    ) -> None:
         """Exception log."""
         ...
 
-    def getChild(self, name: str) -> ProviderLogger:
-        """Get a child logger with the given name."""
+    def getChild(self, suffix: str) -> ProviderLogger:
+        """Get a child logger with the given suffix."""
         ...
 
 

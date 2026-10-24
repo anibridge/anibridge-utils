@@ -6,6 +6,7 @@ from anibridge.utils.mappings import (
     AnibridgeDescriptorMapping,
     AnibridgeMapping,
     AnibridgeMappingRange,
+    AnibridgeMappingTarget,
     descriptor_key,
     format_mapping_range,
     is_valid_source_range,
@@ -28,6 +29,7 @@ from anibridge.utils.mappings import (
         ("1-2-3", False),
         ("abc", False),
         ("1|2", False),
+        ("9-2", False),
     ],
 )
 def test_is_valid_source_range(value: str, expected: bool) -> None:
@@ -52,6 +54,8 @@ def test_is_valid_source_range(value: str, expected: bool) -> None:
         (",2", False),
         ("2,4|x", False),
         ("2|3,4", False),
+        ("9-2", False),
+        ("1,9-2|2", False),
     ],
 )
 def test_is_valid_target_range(value: str, expected: bool) -> None:
@@ -66,6 +70,24 @@ def test_mapping_range_constructor_validates_bounds() -> None:
 
     with pytest.raises(ValueError, match="end must be >= start"):
         AnibridgeMappingRange(start=4, end=3)
+
+
+@pytest.mark.parametrize("value", ["1", "1-3,5-|2", "1-2|-3", "1|0"])
+def test_mapping_target_round_trip(value: str) -> None:
+    target = AnibridgeMappingTarget.parse(value)
+
+    assert target.to_schema_value() == value
+
+
+@pytest.mark.parametrize("value", ["", "1,", "1||2", "1|abc", "3-1", "1,4-2"])
+def test_mapping_target_rejects_invalid_values(value: str) -> None:
+    with pytest.raises(ValueError):
+        AnibridgeMappingTarget.parse(value)
+
+
+def test_mapping_target_requires_segments() -> None:
+    with pytest.raises(ValueError, match="At least one target range is required"):
+        AnibridgeMappingTarget(segments=())
 
 
 def test_mapping_range_contains_for_closed_and_open_ranges() -> None:

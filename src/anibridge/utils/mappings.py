@@ -9,7 +9,6 @@ from anibridge.utils.types import MappingDescriptor
 
 RANGE_PATTERN = r"\d+(?:-\d*)?"
 RANGE_RE = re.compile(rf"^{RANGE_PATTERN}$")
-SOURCE_RANGE_RE = re.compile(rf"^{RANGE_PATTERN}$")
 TARGET_RANGE_RE = re.compile(rf"^{RANGE_PATTERN}(?:,{RANGE_PATTERN})*(?:\|-?\d+)?$")
 DESCRIPTOR_RE = re.compile(
     r"^(?P<provider>\w+):(?P<entry_id>[^:]+)(?::(?P<scope>[^:]+))?$"
@@ -19,6 +18,7 @@ __all__ = [
     "AnibridgeDescriptorMapping",
     "AnibridgeMapping",
     "AnibridgeMappingRange",
+    "AnibridgeMappingTarget",
     "descriptor_key",
     "format_mapping_range",
     "is_valid_source_range",
@@ -74,25 +74,11 @@ class AnibridgeMapping:
     @classmethod
     def parse(cls, source_range: str, target_ranges: str) -> AnibridgeMapping:
         """Build a mapping from schema string values."""
-        raw = target_ranges.strip()
-        if not bool(TARGET_RANGE_RE.match(raw)):
-            raise ValueError(f"Invalid target range '{target_ranges}'")
-
-        if "|" in raw:
-            ranges_part, ratio_part = raw.rsplit("|", 1)
-            ratio = int(ratio_part)
-        else:
-            ranges_part = raw
-            ratio = None
-
-        ranges = tuple(
-            AnibridgeMappingRange.parse(part) for part in ranges_part.split(",")
-        )
-
+        target = AnibridgeMappingTarget.parse(target_ranges)
         return cls(
             source_range=AnibridgeMappingRange.parse(source_range),
-            target_ranges=ranges,
-            target_ratio=ratio,
+            target_ranges=target.segments,
+            target_ratio=target.ratio,
         )
 
     @property
@@ -103,10 +89,9 @@ class AnibridgeMapping:
     @property
     def target_value(self) -> str:
         """Return serialized target range value."""
-        base = ",".join(format_mapping_range(segment) for segment in self.target_ranges)
-        if self.target_ratio is None:
-            return base
-        return f"{base}|{self.target_ratio}"
+        return AnibridgeMappingTarget(
+            segments=self.target_ranges, ratio=self.target_ratio
+        ).to_schema_value()
 
     @property
     def source_weight(self) -> float:
@@ -168,6 +153,42 @@ class AnibridgeMappingRange:
             end = start
 
         return AnibridgeMappingRange(start=start, end=end)
+
+
+@dataclass(frozen=True, slots=True)
+class AnibridgeMappingTarget:
+    """Target range segments and their optional unit ratio."""
+
+    segments: tuple[AnibridgeMappingRange, ...]
+    ratio: int | None = None
+
+    def __post_init__(self) -> None:
+        """Require at least one target segment."""
+        if not self.segments:
+            raise ValueError("At least one target range is required.")
+
+    @classmethod
+    def parse(cls, value: str) -> AnibridgeMappingTarget:
+        """Parse target segments and an optional trailing ratio.
+
+        Raises:
+            ValueError: If the target syntax or segment bounds are invalid.
+        """
+        raw = value.strip()
+        if TARGET_RANGE_RE.fullmatch(raw) is None:
+            raise ValueError(f"Invalid target range '{value}'")
+        ranges_part, separator, ratio_part = raw.partition("|")
+        return cls(
+            segments=tuple(
+                AnibridgeMappingRange.parse(part) for part in ranges_part.split(",")
+            ),
+            ratio=int(ratio_part) if separator else None,
+        )
+
+    def to_schema_value(self) -> str:
+        """Serialize target segments and ratio into canonical schema text."""
+        base = ",".join(format_mapping_range(segment) for segment in self.segments)
+        return base if self.ratio is None else f"{base}|{self.ratio}"
 
 
 @dataclass(slots=True)
@@ -237,12 +258,20 @@ def parse_mapping_descriptor(value: str) -> MappingDescriptor:
 
 def is_valid_source_range(value: str) -> bool:
     """Check if a string is a valid source range."""
-    return bool(SOURCE_RANGE_RE.match(value.strip()))
+    try:
+        AnibridgeMappingRange.parse(value)
+    except ValueError:
+        return False
+    return True
 
 
 def is_valid_target_range(value: str) -> bool:
     """Check if a string is a valid target range."""
-    return bool(TARGET_RANGE_RE.match(value.strip()))
+    try:
+        AnibridgeMappingTarget.parse(value)
+    except ValueError:
+        return False
+    return True
 
 
 def format_mapping_range(range_segment: AnibridgeMappingRange) -> str:
